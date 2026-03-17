@@ -26,6 +26,9 @@ fn main() {
     // Running Checker
     runner::start_health_check(backends.clone());
 
+    // Running Monitor
+    runner::start_monitoring(backends.clone());
+
     println!("load balancer running in port {}", config_data.port);
 
     for stream in listener.incoming() {
@@ -37,8 +40,27 @@ fn main() {
 
                 std::thread::spawn(move || {
 
-                    let balancer = balancer.next();
-                    proxy::tcp_proxy::handle_connection(stream, balancer.unwrap());
+
+                    // Check Backend Exists
+                    if let Some(backend) = balancer.next() {
+
+                        // Check If Backend down
+                        if !backend.is_alive() {
+                            println!("backend suddenly down, please retry again");
+                            return;
+                        }
+
+                        // Increase Using
+                        backend.inc_conn();
+
+                        proxy::tcp_proxy::handle_connection(stream, &backend.address);
+
+                        backend.dec_conn();
+                    }else{
+
+                        println!("NO BACKEND AVAIl!!!")
+                    }
+
                 });
             }
 
@@ -49,5 +71,3 @@ fn main() {
 
     }
 }
-
-

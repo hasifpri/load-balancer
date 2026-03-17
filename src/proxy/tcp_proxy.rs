@@ -1,13 +1,11 @@
 use std::net::TcpStream;
 use std::{io, thread};
 
-pub fn handle_connection(mut client: TcpStream, backend_addr: String) {
-    let mut backend = TcpStream::connect(backend_addr.clone()).unwrap();
+pub fn handle_connection(mut client: TcpStream, backend_addr: &str) {
+    let mut backend = TcpStream::connect(backend_addr).unwrap();
 
     let mut client_reader = client.try_clone().unwrap();
     let mut backend_reader = backend.try_clone().unwrap();
-    
-    println!("Using {}", backend_addr);
 
     // client -> backend
     thread::spawn(move || {

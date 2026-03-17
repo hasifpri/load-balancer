@@ -15,7 +15,13 @@ impl RoundRobin {
         }
     }
 
-    pub fn next(&self) -> Option<String> {
+    pub fn next(&self) -> Option<Arc<Backend>> {
+        
+        // Check Total Backend
+        if self.backends.is_empty() {
+            return None
+        }
+        
         let total = self.backends.len();
 
         for _ in 0..total {
@@ -24,7 +30,7 @@ impl RoundRobin {
             let backend = &self.backends[index % total];
 
             if backend.is_alive() {
-                return Some(backend.address.clone());
+                return Some(Arc::clone(backend));
             }
         }
 
