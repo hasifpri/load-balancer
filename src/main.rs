@@ -6,7 +6,8 @@ mod config;
 
 use std::net::TcpListener;
 use std::sync::Arc;
-use balancer::round_robin::RoundRobin;
+// use balancer::round_robin::RoundRobin;
+use balancer::least_connection::LeastConn;
 use health::runner;
 use crate::backend::backend::Backend;
 
@@ -21,7 +22,7 @@ fn main() {
 
     // load backends
     let backends: Vec<Arc<Backend>> = config_data.backends.servers.into_iter().map(|addr| Arc::new(Backend::new(addr))).collect();
-    let balancer = Arc::new(RoundRobin::new(backends.clone()));
+    let balancer = Arc::new(LeastConn::new(backends.clone()));
     
     // Running Checker
     runner::start_health_check(backends.clone());
@@ -42,7 +43,7 @@ fn main() {
 
 
                     // Check Backend Exists
-                    if let Some(backend) = balancer.next() {
+                    if let Some(backend) = balancer.next_least_conn() {
 
                         // Check If Backend down
                         if !backend.is_alive() {
