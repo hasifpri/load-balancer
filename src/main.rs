@@ -4,9 +4,9 @@ mod proxy;
 mod health;
 mod config;
 
+use std::collections::HashSet;
 use std::net::TcpListener;
 use std::sync::Arc;
-// use balancer::round_robin::RoundRobin;
 use balancer::least_connection::LeastConn;
 use health::runner;
 use crate::backend::backend::Backend;
@@ -41,25 +41,43 @@ fn main() {
 
                 std::thread::spawn(move || {
 
+                    let mut tried: HashSet<String> = HashSet::new();
 
-                    // Check Backend Exists
-                    if let Some(backend) = balancer.next_least_conn() {
+                    while tried.len() < balancer.total_backends() {
 
-                        // Check If Backend down
-                        if !backend.is_alive() {
-                            println!("backend suddenly down, please retry again");
-                            return;
+                        // Check Instance Exists
+                        if let Some(backend) = balancer.next_least_conn(&tried) {
+
+                            if tried.contains(&backend.address) {
+                                continue;
+                            }
+
+                            tried.insert(backend.address.clone());
+
+                            // Check Instance Suddenly Down
+                            if !backend.is_alive() {
+                                println!("backend {} suddenly down, trying next...", backend.address);
+                                continue
+                            }
+
+                            // Exec Instance
+                            backend.inc_conn();
+                            let result = proxy::tcp_proxy::handle_connection(stream.try_clone().unwrap(), &backend.address);
+                            backend.dec_conn();
+
+                            if result.is_ok(){
+                                return;
+                            }else{
+                                println!("backend {} failed, trying next...", backend.address);
+                                backend.set_alive(false)
+                            }
+
+                        }else{
+
+                            println!("NO BACKEND AVAIl!!!");
+                            break
                         }
 
-                        // Increase Using
-                        backend.inc_conn();
-
-                        proxy::tcp_proxy::handle_connection(stream, &backend.address);
-
-                        backend.dec_conn();
-                    }else{
-
-                        println!("NO BACKEND AVAIl!!!")
                     }
 
                 });

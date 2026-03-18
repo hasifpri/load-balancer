@@ -46,10 +46,6 @@ impl Backend {
         self.fail_count.fetch_add(1, Ordering::SeqCst);
     }
     
-    pub fn dec_fail(&self) {
-        self.fail_count.fetch_sub(1, Ordering::SeqCst);
-    }
-    
     pub fn reset_fail(&self) {
         self.fail_count.store(0, Ordering::SeqCst);
     }

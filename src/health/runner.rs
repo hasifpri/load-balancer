@@ -47,7 +47,7 @@ pub fn start_monitoring(backends: Vec<Arc<Backend>>) {
             println!("Current Monitoring Instance Backend");
 
             for backend in &backends {
-                println!("{}: Status {}; Current_Fail: {}; Current_Handle: {}", backend.address, backend.get_alive(), backend.get_fail(), backend.get_conn())
+                println!("Instance {}: Status {}; Current_Fail: {}; Current_Handle: {}", backend.address, backend.get_alive(), backend.get_fail(), backend.get_conn())
             }
 
             thread::sleep(Duration::from_secs(10));

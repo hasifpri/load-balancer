@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 use crate::backend::backend::Backend;
 
@@ -13,13 +14,16 @@ impl LeastConn {
             backends,
         }
     }
-    pub fn next_least_conn(&self) -> Option<Arc<Backend>> {
 
+    pub fn total_backends(&self) -> usize {
+        self.backends.len()
+    }
+
+    pub fn next_least_conn(&self, excluded: &HashSet<String>) -> Option<Arc<Backend>> {
         self.backends
             .iter()
-            .filter(|b| b.is_alive())
-            .min_by_key(|b| b.get_conn())
+            .filter(|b| b.is_alive() && !excluded.contains(&b.address))
+            .min_by_key(|b|b.get_conn())
             .map(|b| Arc::clone(b))
-
     }
 }
